@@ -1,49 +1,87 @@
-import React, { useState } from "react";
-import { Button, TextField, Container, Typography, Box } from "@mui/material";
-import axios from "axios";
+import React, { useState } from 'react';
+import axios from 'axios';
+import { Button, TextField, Container, Typography, Box } from '@mui/material';
 
 function App() {
-  const [message, setMessage] = useState("");
-  const [response, setResponse] = useState("");
+  const [inputText, setInputText] = useState('');
+  const [response, setResponse] = useState('');
+  const [error, setError] = useState('');
 
-  const sendToBackend = async () => {
+  const sendMessage = async () => {
     try {
-      const res = await axios.post("http://localhost:8000/send", {
-        text: message,
-      });
-      setResponse(res.data.response);
+      // Clear previous errors
+      setError('');
+      
+      // Send POST request with proper JSON structure
+      const result = await axios.post('/send', 
+        { text: inputText },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      setResponse(result.data.response);
     } catch (err) {
-      console.error(err);
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.detail || 'Unknown error occurred');
+      } else {
+        setError('An unexpected error occurred');
+      }
+      console.error('API Error:', err);
     }
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 5, textAlign: "center" }}>
-        <Typography variant="h4">React + FastAPI + MUI</Typography>
+    <Container maxWidth="sm" sx={{ mt: 4 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: 3,
+        p: 3,
+        boxShadow: 3,
+        borderRadius: 2
+      }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          FastAPI + React Demo
+        </Typography>
         
         <TextField
-          label="Type a message"
+          label="Type your message"
           variant="outlined"
           fullWidth
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          sx={{ mt: 3 }}
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
         />
         
         <Button
           variant="contained"
           color="primary"
-          onClick={sendToBackend}
-          sx={{ mt: 2 }}
+          onClick={sendMessage}
+          sx={{ py: 1.5 }}
         >
-          Send to FastAPI
+          Send to Backend
         </Button>
         
         {response && (
-          <Typography sx={{ mt: 2 }} color="text.secondary">
-            {response}
-          </Typography>
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: 'success.light', 
+            borderRadius: 1 
+          }}>
+            <Typography>Backend response: {response}</Typography>
+          </Box>
+        )}
+        
+        {error && (
+          <Box sx={{ 
+            p: 2, 
+            bgcolor: 'error.light', 
+            borderRadius: 1 
+          }}>
+            <Typography color="error">Error: {error}</Typography>
+          </Box>
         )}
       </Box>
     </Container>
