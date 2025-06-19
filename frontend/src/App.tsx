@@ -13,7 +13,7 @@ function App() {
       setError('');
       
       // Send POST request with proper JSON structure
-      const result = await axios.post('/send', 
+      const result = await axios.post('http://localhost:8000/send', 
         { text: inputText },
         {
           headers: {
