@@ -1,16 +1,23 @@
+import React from 'react';
+import Sidebar from './Components/Sidebar/Sidebar';
 import Navbar from './Components/Navbar/Navbar';
-import { Container } from '@mui/material';
+import Transcription from './Components/Transcription/Transcription';
+import { Box } from '@mui/material';
+import Upload from './Components/Upload/Upload';
 
-function App() {
-
-
-
+const App: React.FC = () => {
   return (
-    <Container style={{ margin: 0, padding: 0 }}>
-      <Navbar />
-    </Container>
+    <>
+    <Navbar/>
+      <Sidebar />
+      <Box sx={{ display: 'flex', justifyContent: 'space-evenly', paddingLeft: 2 }}>
+        <Transcription />
+        <Upload />
+      </Box>
 
+
+    </>
   );
-}
+};
 
 export default App;

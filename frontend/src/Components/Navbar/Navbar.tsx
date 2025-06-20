@@ -7,58 +7,89 @@ import {
   Button,
   InputBase,
   Avatar,
-  alpha
+  alpha,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 
-const Navbar = () => {
+const Navbar: React.FC = () => {
   return (
-    <AppBar 
-      position="static" 
-      sx={{ 
-        bgcolor: '#fff', 
-        color: '#000', 
-        boxShadow: 0,
-        margin: 0,
-    justifyContent: 'center',  // centers children horizontally
-    alignItems: 'center',      // centers children vertically (usually default)
-    display: 'flex', 
+    <AppBar
+      position="static"
+      sx={{
+        bgcolor: '#fff',
+        color: '#000',
+        boxShadow: 'none',
+        paddingTop: 0,
+        paddingBottom: 0,
       }}
     >
-      <Toolbar 
-        sx={{ 
-          margin: 0,
+      <Toolbar
+        sx={{
+          minHeight: 24,  
+          paddingTop: 0,
+          paddingBottom: 0,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          pt: 0,
+          pb: 0,
+          px: 2,  
         }}
       >
-        <Box sx={{ display: 'flex'}}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>  {/* Reduced gap */}
+          <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '0.875rem' }}>  {/* Smaller font */}
             MyApp
           </Typography>
-          <Button color="inherit">Home</Button>
-          <Button color="inherit">Features</Button>
-          <Button color="inherit">Pricing</Button>
+          {['Home', 'Features', 'Pricing'].map((text) => (
+            <Button
+              key={text}
+              color="inherit"
+              sx={{
+                padding: '1px 4px',  // Reduced padding
+                fontSize: '0.75rem',  // Smaller font
+                minWidth: 'auto',
+                textTransform: 'none',
+                color: '#000',
+                minHeight: 'auto',  // Remove minimum height constraint
+              }}
+            >
+              {text}
+            </Button>
+          ))}
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Search Box */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>  {/* Reduced gap */}
           <Box
             sx={{
               position: 'relative',
-              borderRadius: 2,
+              borderRadius: 1.5,  // Slightly smaller border radius
               bgcolor: alpha('#000', 0.05),
               '&:hover': { bgcolor: alpha('#000', 0.1) },
-              width: '250px',
-              pl: 2,
-              pr: 1,
-              py: 0.5,
+              width: 200,  // Reduced width
+              height: 20,  // Reduced height
+              pl: 1,  // Reduced padding
+              pr: 0.5,
               display: 'flex',
               alignItems: 'center',
             }}
           >
-            <SearchIcon sx={{ mr: 1, color: 'gray' }} />
-            <InputBase placeholder="Search content or transcripts..." fullWidth />
+            <SearchIcon sx={{ color: 'gray', mr: 0.5, fontSize: '1rem' }} />  {/* Smaller icon */}
+            <InputBase
+              placeholder="Search content or transcripts..."
+              fullWidth
+              sx={{
+                fontSize: '0.75rem',  // Smaller font
+                height: '100%',
+                '& input': {
+                  padding: '0 0',
+                  height: '100%',
+                  boxSizing: 'border-box',
+                },
+              }}
+            />
           </Box>
-          <Avatar alt="User" src="/avatar.jpg" sx={{ width: 32, height: 32 }} />
+
+          <Avatar alt="User" src="/avatar.jpg" sx={{ width: 20, height: 20 }} />  {/* Smaller avatar */}
         </Box>
       </Toolbar>
     </AppBar>
