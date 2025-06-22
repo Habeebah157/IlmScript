@@ -6,7 +6,8 @@ import {
   FormControlLabel,
   Switch,
   Tabs,
-  Tab
+  Tab, 
+  Button,
 } from '@mui/material';
 import ProgressBar from '../ProgressBar/ProgressBar'; // Ensure this exists
 
@@ -42,6 +43,39 @@ function a11yProps(index: number) {
 const Upload: React.FC = () => {
   const [isOn, setIsOn] = useState(false);
   const [value, setValue] = useState(0); // for Tabs
+  const [transcription, setTranscription] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+    const [file, setFile] = useState<File | null>(null);
+
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setFile(event.target.files[0]);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) return;
+    setLoading(true);
+
+    // const formData = new FormData();
+    // formData.append('file', file);
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/transcribe', {
+        method: 'POST',
+        // body: formData,
+      });
+
+      const result = await response.json();
+      console.log(result)
+      setTranscription(result.text);
+    } catch (error) {
+      console.error('Upload failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleToggle = () => {
     setIsOn(prev => !prev);
@@ -74,10 +108,30 @@ const Upload: React.FC = () => {
         <Typography variant="body2">Download Transcript</Typography>
       </Box>
 
+        <Box sx={{ display: 'flex', flexDirection: 'column', padding: 4 }}>
+      
+
       <Typography variant="subtitle1" sx={{ mt: 2 }}>
         Upload your Islamic video or audio files for transcription.
       </Typography>
 
+       <Typography variant="h5" gutterBottom>
+          Upload MP3 for Transcription
+        </Typography>
+
+        <input type="file" accept="audio/mp3" onChange={handleFileChange} />
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleUpload}
+          sx={{ mt: 2, width: 'fit-content' }}
+          disabled={loading}
+        >
+          {loading ? 'Uploading...' : 'Upload and Transcribe'}
+        </Button>
+
+        
+        </Box>
 
       <Divider sx={{ my: 3 }} />
 
@@ -88,7 +142,9 @@ const Upload: React.FC = () => {
         </Tabs>
       </Box>
       <CustomTabPanel value={value} index={0}>
-        English transcript will appear here.
+        {transcription && (
+            <p>{transcription}</p>
+        )}
       </CustomTabPanel>
       <CustomTabPanel value={value} index={1}>
         Arabic transcript will appear here.

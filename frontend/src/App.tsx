@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import Sidebar from './Components/Sidebar/Sidebar';
 import Navbar from './Components/Navbar/Navbar';
 import { Box, Button, Typography } from '@mui/material';
+import Transcription from './Components/Transcription/Transcription';
+import  Upload from './Components/Upload/Upload';
 
 const App: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -41,28 +43,15 @@ const App: React.FC = () => {
     <>
       <Navbar />
       <Sidebar />
+
       <Box sx={{ display: 'flex', flexDirection: 'column', padding: 4 }}>
-        <Typography variant="h5" gutterBottom>
-          Upload MP3 for Transcription
-        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, justifyContent: 'space-between', width: '100%' }}>
+          <Transcription />
+          <Upload />
+        </Box>
 
-        <input type="file" accept="audio/mp3" onChange={handleFileChange} />
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleUpload}
-          sx={{ mt: 2, width: 'fit-content' }}
-          disabled={loading}
-        >
-          {loading ? 'Uploading...' : 'Upload and Transcribe'}
-        </Button>
-
-        {transcription && (
-          <Box mt={4}>
-            <Typography variant="h6">Transcription Result:</Typography>
-            <pre>{transcription}</pre>
-          </Box>
-        )}
+        
+       
       </Box>
     </>
   );
