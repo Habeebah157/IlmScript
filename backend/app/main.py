@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from .routers import transcription
 
 app = FastAPI()
 
@@ -15,6 +16,7 @@ app.add_middleware(
 class Message(BaseModel):
     text: str
 
+app.include_router(transcription.router)
 @app.get("/")
 async def root():
     return {"message": "Hello from FastAPI!"}
