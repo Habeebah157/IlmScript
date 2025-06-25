@@ -1,154 +1,85 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Divider,
-  FormControlLabel,
-  Switch,
-  Tabs,
-  Tab, 
-  Button,
-} from '@mui/material';
-import ProgressBar from '../ProgressBar/ProgressBar'; // Ensure this exists
+import { Box, Typography, Button } from '@mui/material';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function CustomTabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 2 }}>{children}</Box>}
-    </div>
-  );
-}
-
-function a11yProps(index: number) {
-  return {
-    id: `simple-tab-${index}`,
-    'aria-controls': `simple-tabpanel-${index}`,
-  };
-}
+const ITEMS_PER_PAGE = 3;
 
 const Upload: React.FC = () => {
-  const [isOn, setIsOn] = useState(false);
-  const [value, setValue] = useState(0); // for Tabs
-  const [transcription, setTranscription] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-    const [file, setFile] = useState<File | null>(null);
-
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setFile(event.target.files[0]);
-    }
-  };
+  const [transcription, setTranscription] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
 
   const handleUpload = async () => {
-    if (!file) return;
     setLoading(true);
-
-    // const formData = new FormData();
-    // formData.append('file', file);
-
     try {
-      const response = await fetch('http://127.0.0.1:8000/transcribe', {
-        method: 'POST',
-        // body: formData,
+      const response = await fetch('http://127.0.0.1:8000/transcription', {
+        method: 'GET',
       });
-
       const result = await response.json();
-      console.log(result)
-      setTranscription(result.text);
-    } catch (error) {
-      console.error('Upload failed:', error);
+      setTranscription(result);
+      setPage(0); // reset page on new data
+    } catch (err) {
+      console.error('Upload failed:', err);
+      setTranscription([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggle = () => {
-    setIsOn(prev => !prev);
-  };
+  const pageCount = Math.ceil(transcription.length / ITEMS_PER_PAGE);
+  const currentItems = transcription.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-  };
+  const handlePrev = () => setPage((p) => Math.max(p - 1, 0));
+  const handleNext = () => setPage((p) => Math.min(p + 1, pageCount - 1));
 
   return (
-    <Box>
-      {/* Top row with Transcription label and toggle */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="body1">Transcription</Typography>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={isOn}
-              onChange={handleToggle}
-              color="primary"
-            />
-          }
-          label={isOn ? 'Arabic Underneath' : 'Off'}
-        />
-      </Box>
+    <Box sx={{ maxWidth: 600, mx: 'auto', p: 2 }}>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleUpload}
+        disabled={loading}
+        sx={{ mb: 3 }}
+      >
+        {loading ? 'Loading...' : 'Load Transcription'}
+      </Button>
 
-      {/* ProgressBar and Download label */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-        <ProgressBar />
-        <Typography variant="body2">Download Transcript</Typography>
-      </Box>
+      {currentItems.length === 0 && !loading && (
+        <Typography>No transcription loaded yet.</Typography>
+      )}
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', padding: 4 }}>
-      
-
-      <Typography variant="subtitle1" sx={{ mt: 2 }}>
-        Upload your Islamic video or audio files for transcription.
-      </Typography>
-
-       <Typography variant="h5" gutterBottom>
-          Upload MP3 for Transcription
-        </Typography>
-
-        <input type="file" accept="audio/mp3" onChange={handleFileChange} />
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleUpload}
-          sx={{ mt: 2, width: 'fit-content' }}
-          disabled={loading}
+      {currentItems.map((item, i) => (
+        <Box
+          key={i}
+          sx={{
+            mb: 2,
+            p: 2,
+            border: '1px solid #ccc',
+            borderRadius: 1,
+            backgroundColor: '#fafafa',
+          }}
         >
-          {loading ? 'Uploading...' : 'Upload and Transcribe'}
-        </Button>
-
-        
+          <Typography variant="body2" color="textSecondary">
+            <strong>Start:</strong> {item.start} &nbsp;|&nbsp; <strong>End:</strong> {item.end}
+          </Typography>
+          <Typography variant="body1" sx={{ mt: 1 }}>
+            {item.text}
+          </Typography>
         </Box>
+      ))}
 
-      <Divider sx={{ my: 3 }} />
-
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={value} onChange={handleChange} aria-label="transcription language tabs">
-          <Tab label="English" {...a11yProps(0)} />
-          <Tab label="Arabic" {...a11yProps(1)} />
-        </Tabs>
-      </Box>
-      <CustomTabPanel value={value} index={0}>
-        {transcription && (
-            <p>{transcription}</p>
-        )}
-      </CustomTabPanel>
-      <CustomTabPanel value={value} index={1}>
-        Arabic transcript will appear here.
-      </CustomTabPanel>
+      {pageCount > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Button onClick={handlePrev} disabled={page === 0}>
+            Previous
+          </Button>
+          <Typography sx={{ alignSelf: 'center' }}>
+            Page {page + 1} of {pageCount}
+          </Typography>
+          <Button onClick={handleNext} disabled={page === pageCount - 1}>
+            Next
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };
