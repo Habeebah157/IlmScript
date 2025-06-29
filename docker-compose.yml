@@ -1,0 +1,35 @@
+version: "3.9"
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"   # map nginx port 80 to host 3000
+    depends_on:
+      - backend
+    # No volumes, no command needed here
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: youruser
+      POSTGRES_PASSWORD: yourpass
+      POSTGRES_DB: yourdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  pgdata:

@@ -3,6 +3,11 @@ from pathlib import Path
 import whisper
 import torch
 import json
+from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+import shutil
+import os
 
 router = APIRouter()
 
@@ -60,3 +65,16 @@ async def get_transcription():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load transcription: {str(e)}")
+
+
+# app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+# UPLOAD_DIR = "uploads"
+# os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# @app.post("/upload")
+# async def upload_file(file: UploadFile = File(...)): 
+#     file_location = f"{UPLOAD_DIR}/{file.filename}"
+#     with open(file_location, "wb") as f: 
+#         shutil.copyfileobj(file.file, f)
+#     return {"filename": file.filename, "url": f"/uploads/{file.filename}"}
