@@ -1,11 +1,6 @@
-from sqlalchemy import Table, Column, Integer, String, MetaData
+from sqlmodel import SQLModel, Field
 
-metadata = MetaData()
-
-files = Table(
-    "files",
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("filename", String, unique=True, index=True),
-    Column("url", String),
-)
+class File(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    filename: str
+    url: str

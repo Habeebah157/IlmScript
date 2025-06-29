@@ -47,23 +47,39 @@
 
 from fastapi.staticfiles import StaticFiles
 from app.routers import upload
-
-
+from .routers import transcription
+from app.database import database, get_session
 from fastapi.middleware.cors import CORSMiddleware
-
 from fastapi import FastAPI
+from sqlmodel import SQLModel
+from app.database import engine, database
+
 
 app = FastAPI()
 
-# Allow CORS for React (running on port 3000)
+# Mount static files BEFORE including routers
+app.mount("/uploads", StaticFiles(directory="app/uploads"), name="uploads")
+
+@app.on_event("startup")
+async def startup():
+    await database.connect()
+    SQLModel.metadata.create_all(engine)
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
+
+# CORS middleware config
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # React's default port
+    allow_origins=["*"],  # Adjust this in production!
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Include routers
 app.include_router(upload.router)
+app.include_router(transcription.router)
 
 @app.get("/")
 async def root():

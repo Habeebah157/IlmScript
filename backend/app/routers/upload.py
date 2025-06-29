@@ -1,32 +1,15 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
+from sqlmodel import Session
+from app.database import get_session
+from app.models.models import File as FileModel
 import shutil
 import os
-
-# from .. import database
-
-# Now use database.some_function() or database.database (whatever you have)
-
-
-# from app.models import files
-
-from app.models.models import files
-
-
-
 
 router = APIRouter()
 
 UPLOAD_DIR = "app/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-@router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    return JSONResponse(content={"url": f"/uploads/{file.filename}"})
-
 
 @router.get("/", response_class=HTMLResponse)
 def form_page():
@@ -42,13 +25,28 @@ def form_page():
     </html>
     """
 
+@router.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    file_path = os.path.join(UPLOAD_DIR, file.filename)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return JSONResponse(content={"url": f"/uploads/{file.filename}"})
+
 @router.post("/uploadandsave")
-async def upload_and_save_file(file: UploadFile = File(...)):
+def upload_and_save_file(
+    file: UploadFile = File(...),
+    session: Session = Depends(get_session)
+):
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    query = files.insert().values(filename=file.filename, url=f"/uploads/{file.filename}")
-    await database.execute(query)
+    file_record = FileModel(
+        filename=file.filename,
+        url=f"/uploads/{file.filename}"
+    )
+    session.add(file_record)
+    session.commit()
+    session.refresh(file_record)
 
-    return {"url": f"/uploads/{file.filename}"}
+    return {"url": file_record.url}
