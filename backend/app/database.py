@@ -16,11 +16,12 @@ from sqlmodel import Session, SQLModel, create_engine
 
 DATABASE_URL = "postgresql://postgres:secret@localhost/ilm_db"
 
-# For async use with `databases` package
+# For async use with databases package
 database = Database(DATABASE_URL)
 
 # For sync use with SQLModel
 engine = create_engine(DATABASE_URL)
+
 
 
 def get_session():
