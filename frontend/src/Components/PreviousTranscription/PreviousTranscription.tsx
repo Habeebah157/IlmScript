@@ -1,78 +1,209 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
-  Typography,
-  Card,
-  CardContent,
-  Collapse,
+  List,
+  ListItem,
+  ListItemText,
   Button,
-} from '@mui/material';
+  Modal,
+  Typography,
+  Paper,
+  Divider,
+  CircularProgress,
+  Alert,
+} from "@mui/material";
 
-interface TranscriptionItem {
-  id: number;
-  title: string;
-  segments: string[];
+interface Segment {
+  start: number;
+  end: number;
+  text: string;
 }
 
-const mockData: TranscriptionItem[] = [
-  {
-    id: 1,
-    title: 'Friday Khutbah - The Art of Silence',
-    segments: [
-      'Welcome to the khutbah.',
-      'Today’s topic is silence and reflection.',
-      'The Prophet (PBUH) said...',
-    ],
-  },
-  {
-    id: 2,
-    title: 'Interview with Dr. Smith',
-    segments: [
-      'Can you introduce yourself?',
-      'My name is Dr. Smith and I specialize in AI.',
-    ],
-  },
-];
+interface Transcription {
+  filename: string;
+  url: string;
+  segments: Segment[];
+}
 
 const PreviousTranscription: React.FC = () => {
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
+  const [selectedTranscription, setSelectedTranscription] = useState<Transcription | null>(null);
+  const [openModal, setOpenModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleToggle = (id: number) => {
-    setExpandedId(prev => (prev === id ? null : id));
+  useEffect(() => {
+    const fetchTranscriptions = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("http://localhost:8000/getsavedtranscriptions");
+        if (!response.ok) {
+          throw new Error("Failed to fetch transcriptions");
+        }
+        const data = await response.json();
+        setTranscriptions(data);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "An unknown error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTranscriptions();
+  }, []);
+
+  const handleOpenModal = (transcription: Transcription) => {
+    setSelectedTranscription(transcription);
+    setOpenModal(true);
   };
 
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" my={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ my: 2 }}>
+        {error}
+      </Alert>
+    );
+  }
+
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Previous Transcriptions
+    <Box>
+      <Typography variant="h6" gutterBottom>
+        Your Previous Transcriptions
       </Typography>
 
-      {mockData.map(item => (
-        <Card
-          key={item.id}
+      {transcriptions.length === 0 ? (
+        <Typography>No transcriptions found</Typography>
+      ) : (
+        <List>
+          {transcriptions.map((transcription, index) => (
+            <ListItem
+              key={index}
+              sx={{
+                mb: 2,
+                border: "1px solid #eee",
+                borderRadius: 1,
+                "&:hover": {
+                  boxShadow: 1,
+                  borderColor: "primary.main",
+                },
+              }}
+            >
+              <ListItemText
+                primary={transcription.filename}
+                secondary={`${transcription.segments.length} segments`}
+              />
+              <Button
+                variant="contained"
+                onClick={() => handleOpenModal(transcription)}
+                sx={{ ml: 2 }}
+              >
+                View Details
+              </Button>
+            </ListItem>
+          ))}
+        </List>
+      )}
+
+      <Modal
+        open={openModal}
+        onClose={handleCloseModal}
+        aria-labelledby="transcription-modal"
+        aria-describedby="transcription-details"
+      >
+        <Box
           sx={{
-            mb: 2,
-            cursor: 'pointer',
-            border: expandedId === item.id ? '2px solid #1976d2' : '1px solid #ccc',
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: { xs: "90%", sm: "80%" },
+            maxWidth: 800,
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 3,
+            maxHeight: "80vh",
+            overflowY: "auto",
+            borderRadius: 1,
           }}
         >
-          <CardContent onClick={() => handleToggle(item.id)}>
-            <Typography variant="subtitle1" fontWeight="bold">
-              {item.title}
-            </Typography>
-          </CardContent>
+          {selectedTranscription && (
+            <>
+              <Typography variant="h5" gutterBottom>
+                {selectedTranscription.filename}
+              </Typography>
 
-          <Collapse in={expandedId === item.id} timeout="auto" unmountOnExit>
-            <CardContent>
-              {item.segments.map((seg, idx) => (
-                <Typography key={idx} variant="body2" sx={{ mb: 1 }}>
-                  {seg}
-                </Typography>
-              ))}
-            </CardContent>
-          </Collapse>
-        </Card>
-      ))}
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Audio URL:{" "}
+                <a
+                  href={selectedTranscription.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {selectedTranscription.url}
+                </a>
+              </Typography>
+
+              {/* 🎧 Audio Player */}
+              <Typography variant="subtitle1" sx={{ mt: 2 }}>
+                Audio Preview:
+              </Typography>
+              <Box sx={{ mb: 3 }}>
+                <audio
+                  controls
+                  style={{ width: "100%" }}
+                  src={selectedTranscription.url}
+                >
+                  Your browser does not support the audio element.
+                </audio>
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Typography variant="h6" gutterBottom>
+                Transcription Segments
+              </Typography>
+
+              <List sx={{ mt: 2 }}>
+                {selectedTranscription.segments.map((segment, index) => (
+                  <Paper
+                    key={index}
+                    sx={{
+                      p: 2,
+                      mb: 2,
+                      "&:hover": {
+                        boxShadow: 1,
+                      },
+                    }}
+                  >
+                    <Typography variant="subtitle2" color="primary">
+                      {segment.start.toFixed(2)}s - {segment.end.toFixed(2)}s
+                    </Typography>
+                    <Typography sx={{ mt: 1 }}>{segment.text}</Typography>
+                  </Paper>
+                ))}
+              </List>
+
+              <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
+                <Button variant="outlined" onClick={handleCloseModal} sx={{ mt: 2 }}>
+                  Close
+                </Button>
+              </Box>
+            </>
+          )}
+        </Box>
+      </Modal>
     </Box>
   );
 };
