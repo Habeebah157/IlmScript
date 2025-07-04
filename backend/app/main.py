@@ -55,6 +55,10 @@ from sqlmodel import SQLModel
 from app.database import engine, database
 
 
+import cloudinary
+import cloudinary.uploader
+
+
 app = FastAPI()
 
 # Mount static files BEFORE including routers
@@ -77,9 +81,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
 # Include routers
 app.include_router(upload.router)
 app.include_router(transcription.router)
+
+
 
 @app.get("/")
 async def root():
