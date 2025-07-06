@@ -11,13 +11,20 @@ from sqlmodel import Session, select
 import hashlib
 import cloudinary
 import cloudinary.uploader
+from io import BytesIO
+import tempfile
+
+
 
 router = APIRouter()
 
+import cloudinary
+
 cloudinary.config(
-    cloud_name="your_cloud_name",
-    api_key="your_api_key",
-    api_secret="your_api_secret",
+    cloud_name="dvozhxxtl",      
+    api_key="494359569394626",             
+    api_secret="ptM56roFhv0GBAlwLits-tf4hLM",      
+    secure=True
 )
 
 # Load model once at module level
@@ -65,25 +72,29 @@ async def transcribe_audio(
     file: UploadFile,
     session: Session = Depends(get_session),
 ):
-    if not file.filename.endswith(".mp3"):
+    # Check file extension (case-insensitive)
+    if not file.filename.lower().endswith(".mp3"):
         raise HTTPException(status_code=400, detail="Only MP3 files are allowed")
 
+    # Read file and calculate hash
     content = await file.read()
     file_hash = hashlib.sha256(content).hexdigest()
 
+    # Check for existing transcription
     existing_file = session.exec(select(FileModel).where(FileModel.hash == file_hash)).first()
-    if existing_file:
-        if existing_file.segments:
-            segments = [
-                {"start": seg.start, "end": seg.end, "text": seg.text}
-                for seg in existing_file.segments
-            ]
-            return {
-                "segments": segments,
-                "filename": existing_file.filename,
-                "url": existing_file.url,
-            }
+    if existing_file and existing_file.segments:
+        segments = [
+            {"start": seg.start, "end": seg.end, "text": seg.text}
+            for seg in existing_file.segments
+        ]
+        return {
+            "segments": segments,
+            "filename": existing_file.filename,
+            "url": existing_file.url,
+        }
 
+
+    # Upload to Cloudinary
     try:
         file_bytes = BytesIO(content)
         upload_result = cloudinary.uploader.upload_large(
@@ -96,6 +107,7 @@ async def transcribe_audio(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Cloudinary upload failed: {str(e)}")
 
+    # Save metadata in DB
     file_record = FileModel(
         filename=file.filename,
         url=audio_url,
@@ -105,18 +117,26 @@ async def transcribe_audio(
     session.commit()
     session.refresh(file_record)
 
-    audio_path = Path(UPLOAD_DIR) / file.filename
-    with open(audio_path, "wb") as buffer:
-        buffer.write(content)
-    output_json_path = audio_path.with_suffix(".json")
+    # Write audio to a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
+        temp_audio.write(content)
+        temp_audio_path = Path(temp_audio.name)
+
+    # Set path for transcription output
+    output_json_path = temp_audio_path.with_suffix(".json")
 
     try:
-        result = model.transcribe(str(audio_path), fp16=(device == "cuda"))
+        # Transcribe using the model (e.g., Whisper)
+        result = model.transcribe(str(temp_audio_path), fp16=(device == "cuda"))
         with open(output_json_path, "w", encoding="utf-8") as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+    finally:
+        # Clean up temporary audio file
+        os.remove(temp_audio_path)
 
+    # Extract segments and save to DB
     segments = result.get("segments", [])
     for seg in segments:
         segment_record = Segment(

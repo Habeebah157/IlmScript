@@ -22,7 +22,7 @@ const App: React.FC = () => {
           element={
             <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, justifyContent: 'space-between', width: '100%' }}>
               <Transcription />
-              <Upload />
+              {/* <Upload /> */}
             </Box>
           }
         />
